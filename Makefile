@@ -1,5 +1,5 @@
 
-all: submodules gettests buildtools
+all: submodules getvecs buildtools
 
 submodules:
 	@echo -n "Initializing submodules..."
@@ -7,9 +7,9 @@ submodules:
 	@git submodule update
 	@echo "done."
 
-gettests:
+getvecs:
 	@echo "Getting test vectors."
-	@cd tests && ./00download_tests.sh
+	@cd test_vectors && ./00download_tests.sh
 	@echo "Done."
 
 buildtools:

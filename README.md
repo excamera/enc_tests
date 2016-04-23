@@ -2,6 +2,8 @@
 
 This is a test battery for comparing the alfalfa encoder to libvpx's VP8 encoder.
 
+Under Debian(ish) you will need libogg-dev, gnuplot, and vpx-tools.
+
 ## Copying ##
 
 © 2016 alfalfa project and contributors.

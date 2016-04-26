@@ -16,12 +16,14 @@ else
 QPFX :=
 endif
 
-all: submodules getvecs buildtools runtests
+TESTVECS := ../test_vectors/*.y4m ../test_vectors/subset1-y4m/*.y4m
 
+all: runxc
+
+.PHONY: submodules getvecs build_tools clean
 submodules:
 	$(QPFX)echo -n "Initializing submodules..."
-	$(QPFX)git submodule init
-	$(QPFX)git submodule update
+	$(QPFX)git submodule update --init
 	$(QPFX)echo "done."
 
 getvecs:
@@ -29,16 +31,23 @@ getvecs:
 	$(QPFX)cd test_vectors && ./00download_tests.sh
 	$(QPFX)echo "Done."
 
-buildtools:
+build_tools:
 	$(QPFX)echo "Building daala_tools."
 	$(QPFX)make -C daala_tools
 	$(QPFX)echo "Done."
 
-runtests:
-	$(QPFX)echo "Running tests."
+runvp8: submodules getvecs build_tools
+	$(QPFX)echo "Regenerating vp8 test data."
+	$(QPFX)mkdir -p run vp8_data
+	$(QPFX)cd run && XC_ROOT=../../alfalfa TESTS_ROOT=.. ../bin/run_tests.sh -R $(TESTVECS)
+	$(QPFX)mv run/*vp8.out vp8_data
+	$(QPFX)echo "Done".
+
+runxc: submodules getvecs build_tools
+	$(QPFX)echo "Running xc tests."
 	$(QPFX)mkdir -p run
-	$(QPFX)cd run && TESTS_ROOT=.. ../bin/run_tests.sh ../test_vectors/*.y4m
-	$(QPFX)for i in run/*.out; do bin/ssim_vs_bpp.pl $$i | gnuplot -e "ofile='"$$i".png';otitle='"$$i", SSIM vs bpp';" plt/bpp_vs_ssim.plt; done
+	$(QPFX)cd run && XC_ROOT=../../alfalfa TESTS_ROOT=.. ../bin/run_tests.sh $(TESTVECS)
+	$(QPFX)cd run && ../bin/ssim_vs_bpp.sh *xc.out
 	$(QPFX)echo "Done."
 
 clean:

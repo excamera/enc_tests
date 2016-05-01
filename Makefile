@@ -47,7 +47,10 @@ runxc: submodules getvecs build_tools
 	$(QPFX)echo "Running xc tests."
 	$(QPFX)mkdir -p run
 	$(QPFX)cd run && XC_ROOT=../../alfalfa TESTS_ROOT=.. ../bin/run_tests.sh $(TESTVECS)
+	$(QPFX)echo "Plotting."
 	$(QPFX)cd run && ../bin/ssim_vs_bpp.sh *xc.out
+	$(QPFX)echo "Finished plotting. Converting to animated GIF."
+	$(QPFX)convert -delay 100 -size 640x480 -loop 0 $$(for i in run/*.png; do echo "-page +0+0 $$i"; done | tr '\n' ' ') run/runxc_out.gif
 	$(QPFX)echo "Done."
 
 clean:

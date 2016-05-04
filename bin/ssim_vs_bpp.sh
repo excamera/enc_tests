@@ -26,6 +26,7 @@ fi
 for FILE in "$@"; do
     BASENAME=$(basename "$FILE" -xc.out)
     VP8DATA=../vp8_data/"$BASENAME"-vp8.out
+    XCDATA=../xc_data/"$BASENAME"-xc.out
     BASENAME2=$(tr -d "'" <<< ${BASENAME})
     if [ ! -f "$VP8DATA" ]; then
         echo "Could not find VP8 data $VP8DATA."
@@ -33,9 +34,11 @@ for FILE in "$@"; do
     fi
 
     TMPFILE=$(mktemp ssim_vs_bpp.XXXXXXXX)
-    TMPFILE2=$(mktemp ssim_vs_bpp.XXXXXXXX.png)
+    TMPFILE2=$(mktemp ssim_vs_bpp.XXXXXXXX)
+    TMPFILE3=$(mktemp ssim_vs_bpp.XXXXXXXX.png)
     "$PROCOUT" "$VP8DATA" > "$TMPFILE"
-    "$PROCOUT" "$FILE" | "$GNUPLOT" -e "ofile='${TMPFILE2}';otitle='${BASENAME2}, SSIM vs bpp';ifile='${TMPFILE}';" ../plt/ssim_vs_bpp.plt
-    mv "$TMPFILE2" "$BASENAME".png
-    rm -f "$TMPFILE"
+    "$PROCOUT" "$XCDATA" > "$TMPFILE2"
+    "$PROCOUT" "$FILE" | "$GNUPLOT" -e "ofile='${TMPFILE3}';otitle='${BASENAME2}, SSIM vs bpp';rfile='${TMPFILE2}';ifile='${TMPFILE}';" ../plt/ssim_vs_bpp.plt
+    mv "$TMPFILE3" "$BASENAME".png
+    rm -f "$TMPFILE" "$TMPFILE2"
 done

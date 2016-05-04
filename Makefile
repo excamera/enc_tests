@@ -8,6 +8,7 @@
 #
 # override defaults on commandline
 QUIET ?= 1
+XC_ROOT ?= $(shell readlink -f ../alfalfa)
 
 # turn options into useful crap
 ifeq ($(QUIET),1)
@@ -39,14 +40,14 @@ build_tools:
 runvp8: submodules getvecs build_tools
 	$(QPFX)echo "Regenerating vp8 test data."
 	$(QPFX)mkdir -p run vp8_data
-	$(QPFX)cd run && XC_ROOT=../../alfalfa TESTS_ROOT=.. ../bin/run_tests.sh -R $(TESTVECS)
+	$(QPFX)cd run && XC_ROOT="$(XC_ROOT)" TESTS_ROOT=.. ../bin/run_tests.sh -R $(TESTVECS)
 	$(QPFX)mv run/*vp8.out vp8_data
 	$(QPFX)echo "Done".
 
 runxc: submodules getvecs build_tools
 	$(QPFX)echo "Running xc tests."
 	$(QPFX)mkdir -p run
-	$(QPFX)cd run && XC_ROOT=../../alfalfa TESTS_ROOT=.. ../bin/run_tests.sh $(TESTVECS)
+	$(QPFX)cd run && XC_ROOT="$(XC_ROOT)" TESTS_ROOT=.. ../bin/run_tests.sh $(TESTVECS)
 	$(QPFX)echo "Done."
 
 # note: I didn't make this depend on runxc because I don't want to force you to regen,
@@ -62,6 +63,7 @@ plotxc:
 updatexc:
 	$(QPFX)echo "Updating xc_data files."
 	$(QPFX)mv run/*xc.out xc_data
+	$(QPFX)git -C "$(XC_ROOT)" log -1 --pretty=format:%H > xc_data/commit_id
 	$(QPFX)echo "Done."
 
 clean:

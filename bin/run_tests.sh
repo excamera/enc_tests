@@ -96,7 +96,6 @@ run_one_test () {
 }
 
 ### Now, run the tests
-RANGE=$(seq 1 63)
 for FILE in "$@"; do
     WIDTH=$(head -1 $FILE | cut -d\  -f 2 | tr -d 'W')
     HEIGHT=$(head -1 $FILE | cut -d\  -f 3 | tr -d 'H')
@@ -106,6 +105,7 @@ for FILE in "$@"; do
         rm -f $BASENAME.out
         echo -n $BASENAME
 
+        RANGE=$(seq 1 63)
         for x in $RANGE; do
             echo -n " "$x
             $VPXENC --codec=vp8 --good --cpu-used=0 --ivf $(echo $QSTR | sed 's/\$x/'$x'/g') -o $BASENAME.ivf $FILE 2> $BASENAME-$x-enc.out
@@ -117,8 +117,11 @@ for FILE in "$@"; do
         rm -f $BASENAME.out
         echo -n $BASENAME
 
-        "$XCENC" -i y4m -o "$BASENAME".ivf "$FILE" 2> $BASENAME-0-enc.out
-        run_one_test 0 "$BASENAME"
+        RANGE=$(seq 0.69 0.05 0.99)
+        for x in $RANGE; do
+            "$XCENC" -i y4m -o "$BASENAME".ivf -s $x "$FILE" 2> $BASENAME-$x-enc.out
+            run_one_test "$x" "$BASENAME"
+        done
         echo
     fi
 done

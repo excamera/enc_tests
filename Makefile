@@ -31,9 +31,8 @@ all: plotxc
 # Using $(eval $(call )) this way is convenient because we can add more subdirs just by changing
 # the $(TESTDIRS) variable definition, above
 define VP8RULE
-vp8_data/%-vp8.out: test_vectors/$(1)/% getvecs build_tools
+vp8_data/%-vp8.out: test_vectors/$(1)/% | getvecs build_tools run2 vp8_data
 	$(QPFX)echo "Generating vp8 test data for $$<"
-	$(QPFX)mkdir -p run2 vp8_data
 	$(QPFX)cd run2 && XC_ROOT="$$(XC_ROOT)" TESTS_ROOT=.. ../bin/run_tests.sh -R ../"$$<"
 	$(QPFX)mv run2/"$$(notdir $$@)" vp8_data
 endef
@@ -42,9 +41,8 @@ $(foreach tdir,$(TESTDIRS),$(eval $(call VP8RULE,$(tdir))))
 
 # as above, we make separate rules for each subdir in test_vectors where a vector might live
 define XCRULE
-run/%-xc.out: test_vectors/$(1)/% getvecs build_tools
+run/%-xc.out: test_vectors/$(1)/% | getvecs build_tools run
 	$(QPFX)echo "Generating xc test data for $$<"
-	$(QPFX)mkdir -p run
 	$(QPFX)cd run && XC_ROOT="$$(XC_ROOT)" TESTS_ROOT=.. ../bin/run_tests.sh ../"$$<"
 endef
 $(foreach tdir,$(TESTDIRS),$(eval $(call XCRULE,$(tdir))))
@@ -53,6 +51,18 @@ $(foreach tdir,$(TESTDIRS),$(eval $(call XCRULE,$(tdir))))
 run/%.png: run/%-xc.out vp8_data/%-vp8.out
 	$(QPFX)echo -n "Generating $@"
 	$(QPFX)cd run && ../bin/ssim_vs_bpp.sh "$(notdir $<)"
+
+run:
+	$(QPFX)mkdir -p run
+
+run2:
+	$(QPFX)mkdir -p run2
+
+vp8_data:
+	$(QPFX)mkdir -p vp8_data
+
+xc_data:
+	$(QPFX)mkdir -p xc_data
 
 submodules:
 	$(QPFX)echo -n "Initializing submodules..."
@@ -80,7 +90,7 @@ run/runxc_out.gif: $(PLTTARGS)
 	$(QPFX)convert -delay 100 -size 640x480 -loop 0 $$(for i in run/*.png; do echo "-page +0+0 $$i"; done | tr '\n' ' ') run/runxc_out.gif
 	$(QPFX)echo "Done."
 
-updatexc: runxc
+updatexc: runxc | xc_data
 	$(QPFX)echo "Updating xc_data files."
 	$(QPFX)cp run/*xc.out xc_data
 	$(QPFX)git -C "$(XC_ROOT)" log -1 --pretty=format:%H > xc_data/commit_id

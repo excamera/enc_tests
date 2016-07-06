@@ -17,11 +17,43 @@ else
 QPFX :=
 endif
 
-TESTVECS := ../test_vectors/*.y4m ../test_vectors/subset1-y4m/*.y4m
+TESTVECS := $(notdir $(wildcard test_vectors/*.y4m test_vectors/subset1-y4m/*.y4m))
+VP8TARGS := $(addprefix vp8_data/,$(addsuffix -vp8.out,$(TESTVECS)))
+XCTARGS := $(addprefix run/,$(addsuffix -xc.out,$(TESTVECS)))
+PLTTARGS := $(addprefix run/,$(addsuffix .png,$(TESTVECS)))
+TESTDIRS := . subset1-y4m
 
-all: runxc plotxc
+.PHONY: all submodules getvecs build_tools runvp8 runxc plotxc updatexc clean
+all: plotxc
 
-.PHONY: submodules getvecs build_tools runvp8 runxc plotxc updatexc clean
+# each test vector can be in test_vectors/ or in test_vectors/subset1-y4m or maybe other directories,
+# so we define separate rules that match depending on where the input file lives.
+# Using $(eval $(call )) this way is convenient because we can add more subdirs just by changing
+# the $(TESTDIRS) variable definition, above
+define VP8RULE
+vp8_data/%-vp8.out: test_vectors/$(1)/% getvecs build_tools
+	$(QPFX)echo "Generating vp8 test data for $$<"
+	$(QPFX)mkdir -p run2 vp8_data
+	$(QPFX)cd run2 && XC_ROOT="$$(XC_ROOT)" TESTS_ROOT=.. ../bin/run_tests.sh -R ../"$$<"
+	$(QPFX)mv run2/"$$(notdir $$@)" vp8_data
+endef
+# the following line actually defines the vp8_data/%-vp8.out targets based on VP8RULE and $(TESTDIRS)
+$(foreach tdir,$(TESTDIRS),$(eval $(call VP8RULE,$(tdir))))
+
+# as above, we make separate rules for each subdir in test_vectors where a vector might live
+define XCRULE
+run/%-xc.out: test_vectors/$(1)/% getvecs build_tools
+	$(QPFX)echo "Generating xc test data for $$<"
+	$(QPFX)mkdir -p run
+	$(QPFX)cd run && XC_ROOT="$$(XC_ROOT)" TESTS_ROOT=.. ../bin/run_tests.sh ../"$$<"
+endef
+$(foreach tdir,$(TESTDIRS),$(eval $(call XCRULE,$(tdir))))
+
+# to make the png, we need the xc out and the vp8 out
+run/%.png: run/%-xc.out vp8_data/%-vp8.out
+	$(QPFX)echo -n "Generating $@"
+	$(QPFX)cd run && ../bin/ssim_vs_bpp.sh "$(notdir $<)"
+
 submodules:
 	$(QPFX)echo -n "Initializing submodules..."
 	$(QPFX)git submodule update --init
@@ -32,42 +64,30 @@ getvecs:
 	$(QPFX)cd test_vectors && ./00download_tests.sh
 	$(QPFX)echo "Done."
 
-build_tools:
+build_tools: submodules
 	$(QPFX)echo "Building daala_tools."
-	$(QPFX)make -C daala_tools
+	$(QPFX)+make -C daala_tools
 	$(QPFX)echo "Done."
 
-runvp8: submodules getvecs build_tools
-	$(QPFX)echo "Regenerating vp8 test data."
-	$(QPFX)mkdir -p run vp8_data
-	$(QPFX)cd run && XC_ROOT="$(XC_ROOT)" TESTS_ROOT=.. ../bin/run_tests.sh -R $(TESTVECS)
-	$(QPFX)mv run/*vp8.out vp8_data
-	$(QPFX)echo "Done".
+runvp8: $(VP8TARGS)
 
-runxc: submodules getvecs build_tools
-	$(QPFX)echo "Running xc tests."
-	$(QPFX)mkdir -p run
-	$(QPFX)cd run && XC_ROOT="$(XC_ROOT)" TESTS_ROOT=.. ../bin/run_tests.sh $(TESTVECS)
-	$(QPFX)echo "Done."
+runxc: $(XCTARGS)
 
-# note: I didn't make this depend on runxc because I don't want to force you to regen,
-# but you will need to have made runxc before this target will work.
-plotxc:
-	$(QPFX)echo "Plotting."
-	$(QPFX)cd run && ../bin/ssim_vs_bpp.sh *xc.out
-	$(QPFX)echo "Finished plotting. Converting to animated GIF."
+plotxc: run/runxc_out.gif
+
+run/runxc_out.gif: $(PLTTARGS)
+	$(QPFX)echo "Converting plots to animated GIF."
 	$(QPFX)convert -delay 100 -size 640x480 -loop 0 $$(for i in run/*.png; do echo "-page +0+0 $$i"; done | tr '\n' ' ') run/runxc_out.gif
 	$(QPFX)echo "Done."
 
-# see comment on plotxc target
-updatexc:
+updatexc: runxc
 	$(QPFX)echo "Updating xc_data files."
-	$(QPFX)mv run/*xc.out xc_data
+	$(QPFX)cp run/*xc.out xc_data
 	$(QPFX)git -C "$(XC_ROOT)" log -1 --pretty=format:%H > xc_data/commit_id
 	$(QPFX)echo "Done."
 
 clean:
 	$(QPFX)echo "Cleaning up."
 	$(QPFX)make -C daala_tools clean
-	$(QPFX)rm -rf run
+	$(QPFX)rm -rf run run2
 	$(QPFX)echo "Done."

@@ -108,7 +108,7 @@ for FILE in "$@"; do
         RANGE=$(seq 1 63)
         for x in $RANGE; do
             echo -n " "$x
-            $VPXENC --codec=vp8 --good --cpu-used=0 --ivf $(echo $QSTR | sed 's/\$x/'$x'/g') -o $BASENAME.ivf $FILE 2> $BASENAME-$x-enc.out
+            $VPXENC -y --codec=vp8 --good --cpu-used=0 --ivf $(echo $QSTR | sed 's/\$x/'$x'/g') -o $BASENAME.ivf $FILE 2> $BASENAME-$x-enc.out
             run_one_test "$x" "$BASENAME"
         done
         echo

@@ -8,12 +8,9 @@ if (scalar @ARGV < 2) {
     exit(-1);
 }
 
-my $fh_vp8;
-my $fh_xc;
-open($fh_vp8, "<".$ARGV[0]) or die "Could not open $ARGV[0]: $!";
-open($fh_xc, "<".$ARGV[1]) or die "Could not open $ARGV[1]: $!";
-
 # read in the output files into hashes keyed by ssim
+my $fh_vp8;
+open($fh_vp8, "<".$ARGV[0]) or die "Could not open $ARGV[0]: $!";
 my %vp8_hash;
 while (<$fh_vp8>) {
     chomp;
@@ -21,7 +18,10 @@ while (<$fh_vp8>) {
     $vp8_hash{$ssim} = [ $bpp ];
 }
 my @vp8_ssim = sort {$a <=> $b} keys %vp8_hash;
+close $fh_vp8;
 
+my $fh_xc;
+open($fh_xc, "<".$ARGV[1]) or die "Could not open $ARGV[1]: $!";
 my %xc_hash;
 while (<$fh_xc>) {
     chomp;
@@ -29,52 +29,36 @@ while (<$fh_xc>) {
     $xc_hash{$ssim} = [ $bpp ];
 }
 my @xc_ssim = sort {$a <=> $b} keys %xc_hash;
-# print "xc ssim\n";
-# print "@xc_ssim\n";
-# print "xc hash\n";
-# use Data::Dumper;
-# print Dumper(\%xc_hash);
-
-# print "vp8 ssim\n";
-# print "@vp8_ssim\n";
-# print "vp8 hash\n";
-# use Data::Dumper;
-# print Dumper(\%vp8_hash);
+close $fh_xc;
 
 my $bpp_diff = 0;
 my $count = 0;
-# print "dis the size ";
-# print scalar @xc_ssim;
-# print "\n";
 
 # for each ssim/bpp pair in xc, find the bpp of the same ssim in vp8 and take the difference
 foreach (@xc_ssim) {
-    # print "ssim: $_\n";
+    # after the while loop, counter points at the vpx ssim directly above the given xc ssim
     my $counter = 0;
     while ($counter < scalar @vp8_ssim and $vp8_ssim[$counter] < $_) {
         $counter++;
     }
-    # print "counter: $counter\n";
+    # if the xc ssim is not within the range of vp8's ssim, discard it
     if ($counter > 0 and $counter < scalar @vp8_ssim) {
-        my $vp8_bpp = ($vp8_hash{$vp8_ssim[$counter]}[0]+$vp8_hash{$vp8_ssim[$counter-1]}[0])/2;
-        # print "vp8_bpp: $vp8_bpp\n";
-        # print "xcc_bpp: $xc_hash{$_}[0]\n";
+        # using the adjacent vp8 ssim/bpp points to create a line, find the bpp corresponding to the given xc ssim
+        my $vp8_bpp = $vp8_hash{$vp8_ssim[$counter-1]}[0]
+            +(($vp8_hash{$vp8_ssim[$counter]}[0]-$vp8_hash{$vp8_ssim[$counter-1]}[0])
+                *($_-$vp8_ssim[$counter-1])/($vp8_ssim[$counter]-$vp8_ssim[$counter-1]));
         my $diff = ($xc_hash{$_}[0]-$vp8_bpp)/$vp8_bpp;
-        # print "diff: $diff\n";
         $bpp_diff += $diff;
         $count++;
     }
 }
-$bpp_diff /= $count;
+if ($count > 0) {
+    $bpp_diff /= $count;
+}
 printf("%.4f\n", $bpp_diff);
 
-# # dump in ascending bpp order
-# foreach my $b (sort { int($a) <=> int($b) } keys %res) {
-#     my @rv = @{$res{$b}};
-#     my $npix = $rv[1];
-#     my $ssim = $rv[4];
-#     my $bpp = 8 * $b / $npix;
-
-#     # this just dumps out bpp and ssim
-#     printf("%4f %4f\n", $bpp, $ssim);
-# }
+# prints the bpp diff to a file, which can be used to find the average bpp diff over all photos
+my $filename='../run/bppdiff.txt';
+open(my $fh_out, '>>', $filename) or die "Could not open file '$filename' $!";
+print $fh_out "$bpp_diff\n";
+close $fh_out;

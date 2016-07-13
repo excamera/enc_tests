@@ -2,7 +2,7 @@
 set terminal pngcairo
 set logscale x
 set ylabel 'SSIM (dB0)'
-set xlabel 'bits per pixel'
+set xlabel bppdiff
 set title otitle
 set output ofile
 set style line 1 lc rgb '#dd181f' lt 1 lw 2
@@ -14,4 +14,4 @@ set yrange [0:35]
 
 plot ifile  using 1:2 title 'VP8'       with lines          ls 1, \
      rfile  using 1:2 title 'XC (ref)'  with linespoints    ls 2, \
-     '<cat' using 1:2 title 'XC'        with linespoints    ls 3
+     file using 1:2 title 'XC'        with linespoints    ls 3

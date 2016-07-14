@@ -1,3 +1,6 @@
 [submodule "daala_tools"]
 	path = daala_tools
 	url = https://github.com/alfalfa/daala_tools
+[submodule "test_vectors/xc_encoder_test_vectors_video"]
+	path = test_vectors/xc_encoder_test_vectors_video
+	url = github.com:alfalfa/xc_encoder_test_vectors_video

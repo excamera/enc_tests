@@ -7,6 +7,10 @@
 set -e
 set -o pipefail
 
+if [ -z "$FRAMENUMBER" ]; then
+    export FRAMENUMBER="Total"
+fi
+
 if [ -z "$GNUPLOT" ]; then
     export GNUPLOT=$(which gnuplot)
 fi
@@ -32,9 +36,9 @@ if [ ! -x "$CALCDIFF" ]; then
 fi
 
 for FILE in "$@"; do
-    BASENAME=$(basename "$FILE" -xc.out)
-    VP8DATA=../vp8_data/"$BASENAME"-vp8.out
-    XCDATA=../xc_data/"$BASENAME"-xc.out
+    BASENAME=$(basename "$FILE" -xc-"$FRAMENUMBER".out)
+    VP8DATA=../vp8_data/"$BASENAME"-vp8-"$FRAMENUMBER".out
+    XCDATA=../xc_data/"$BASENAME"-xc-"$FRAMENUMBER".out
     BASENAME2=$(tr -d "'" <<< ${BASENAME})
     if [ ! -f "$VP8DATA" ]; then
         echo "Could not find VP8 data $VP8DATA."
@@ -50,6 +54,6 @@ for FILE in "$@"; do
     BPPDIFF=$("$CALCDIFF" "$TMPFILE" "$TMPFILE3")
     echo "$BPPDIFF" > "$BASENAME".bppdiff
     "$GNUPLOT" -e "ofile='${TMPFILE4}';otitle='${BASENAME2}, SSIM vs bpp';bppdiff='bits per pixel, %diff=${BPPDIFF}';rfile='${TMPFILE2}';ifile='${TMPFILE}';file='${TMPFILE3}';" ../plt/ssim_vs_bpp.plt
-    mv "$TMPFILE4" "$BASENAME".png
+    mv "$TMPFILE4" "$BASENAME"-"$FRAMENUMBER".png
     rm -f "$TMPFILE" "$TMPFILE2" "$TMPFILE3"
 done

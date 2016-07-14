@@ -9,6 +9,11 @@
 set -e
 set -o pipefail
 
+### frame number
+if [ -z "$FRAMENUMBER" ]; then
+    export FRAMENUMBER="Total"
+fi
+
 ### make sure TESTS_ROOT and XC_ROOT are initialized
 if [ -z "$TESTS_ROOT" ]; then
     echo "Please specify TESTS_ROOT, path to your checkout of the enc_tests repo."
@@ -38,11 +43,11 @@ if [ ! -x "$VPXENC" ] || [ ! -x "$VPXDEC" ]; then
 fi
 
 ### dumbencode
-export XCENC=$XC_ROOT/src/frontend/xc-enc
-
-if [ ! -x "$XCENC" ]; then
-    echo "Couldn't find xc-enc"
-    echo "Perhaps you need to build alfalfa@dumbtrip."
+export XCENC="$XC_ROOT"/src/frontend/xc-enc
+export XCSIZE="$XC_ROOT"/src/frontend/xc-framesize
+if [ ! -x "$XCENC" ] || [ ! -x "$XCSIZE" ]; then
+    echo "Couldn't find xc-enc or xc-framesize"
+    echo "Perhaps you need to build alfalfa."
     exit 1
 fi
 
@@ -82,17 +87,26 @@ run_one_test () {
     x=$1
     BASENAME=$2
 
-    $VPXDEC --codec=vp8 -o $BASENAME.y4m $BASENAME.ivf
-    SIZE=$(wc -c $BASENAME.ivf | cut -d\  -f 1)
-    $DUMP_PSNR $FILE $BASENAME.y4m > $BASENAME-$x-psnr.out 2> /dev/null
-    FRAMES=$(cat $BASENAME-$x-psnr.out | grep ^0 | wc -l)
+    "$VPXDEC" --codec=vp8 -o "$BASENAME".y4m "$BASENAME".ivf
+    SIZE=$("$XCSIZE" "$BASENAME".ivf | grep "$FRAMENUMBER" | tr -s ' ' | cut -d\  -f 2)
+    "$DUMP_SSIM" "$FILE" "$BASENAME".y4m > "$BASENAME"-"$x"-ssim.out 2> /dev/null
+    FRAMES=$(cat "$BASENAME"-"$x"-ssim.out | grep ^0 | wc -l)
     PIXELS=$(($WIDTH*$HEIGHT*$FRAMES))
-    PSNR=$(cat $BASENAME-$x-psnr.out | grep Total | tr -s ' ' | cut -d\  -f $((4+$PLANE*2)))
-    PSNRHVS=$($DUMP_PSNRHVS $FILE $BASENAME.y4m 2> /dev/null | grep Total | tr -s ' ' | cut -d\  -f $((4+$PLANE*2)))
-    SSIM=$($DUMP_SSIM $FILE $BASENAME.y4m 2> /dev/null | grep Total | tr -s ' ' | cut -d\  -f $((4+$PLANE*2)))
-    FASTSSIM=$($DUMP_FASTSSIM -c $FILE $BASENAME.y4m 2> /dev/null | grep Total | tr -s ' ' | cut -d\  -f $((4+$PLANE*2)))
-    rm -f $BASENAME.ivf $BASENAME.y4m $BASENAME-$x-enc.out $BASENAME-$x-psnr.out
-    echo $x $PIXELS $SIZE $PSNR $PSNRHVS $SSIM $FASTSSIM >> $BASENAME.out
+    #
+    # NOTE: since we only care about SSIM for now, we can skip running these and just put out dummy numbers
+    #
+    #PSNR=$($DUMP_PSNR $FILE $BASENAME.y4m 2> /dev/null | grep "$FRAMENUMBER" | tr -s ' ' | cut -d\  -f $((4+$PLANE*2)))
+    #PSNRHVS=$($DUMP_PSNRHVS $FILE $BASENAME.y4m 2> /dev/null | grep "$FRAMENUMBER" | tr -s ' ' | cut -d\  -f $((4+$PLANE*2)))
+    #FASTSSIM=$($DUMP_FASTSSIM -c $FILE $BASENAME.y4m 2> /dev/null | grep "$FRAMENUMBER" | tr -s ' ' | cut -d\  -f $((4+$PLANE*2)))
+    #
+    #
+    #
+    PSNR=0
+    PSNRHVS=0
+    FASTSSIM=0
+    SSIM=$(cat "$BASENAME"-"$x"-ssim.out | grep "$FRAMENUMBER" | tr -s ' ' | cut -d\  -f $((4+$PLANE*2)))
+    #rm -f "$BASENAME".ivf "$BASENAME".y4m "$BASENAME"-"$x"-enc.out "$BASENAME"-"$x"-ssim.out
+    echo $x $PIXELS $SIZE $PSNR $PSNRHVS $SSIM $FASTSSIM >> "$BASENAME".out
 }
 
 ### Now, run the tests
@@ -101,27 +115,24 @@ for FILE in "$@"; do
     HEIGHT=$(head -1 $FILE | cut -d\  -f 3 | tr -d 'H')
 
     if [ "$REGEN" = "1" ]; then
-        BASENAME=$(basename $FILE)-vp8
+        BASENAME=$(basename $FILE)-vp8-"$FRAMENUMBER"
         rm -f $BASENAME.out
-        echo -n $BASENAME
 
         RANGE=$(seq 1 63)
         for x in $RANGE; do
-            echo -n " "$x
+            echo $BASENAME\($x\)
             $VPXENC -y --codec=vp8 --good --cpu-used=0 --ivf $(echo $QSTR | sed 's/\$x/'$x'/g') -o $BASENAME.ivf $FILE 2> $BASENAME-$x-enc.out
             run_one_test "$x" "$BASENAME"
         done
-        echo
     else
-        BASENAME=$(basename $FILE)-xc
+        BASENAME=$(basename $FILE)-xc-"$FRAMENUMBER"
         rm -f $BASENAME.out
-        echo -n $BASENAME
 
         RANGE=$(seq 0.69 0.05 0.99)
         for x in $RANGE; do
+            echo $BASENAME\($x\)
             "$XCENC" -i y4m -o "$BASENAME".ivf -s $x "$FILE" 2> $BASENAME-$x-enc.out
             run_one_test "$x" "$BASENAME"
         done
-        echo
     fi
 done

@@ -51,7 +51,7 @@ TESTVECS := $(notdir $(wildcard $(addprefix test_vectors/,$(addsuffix /*.y4m,$(T
 VP8TARGS := $(addprefix vp8_data/,$(addsuffix -vp8-$(FRAMENUMBER).out,$(TESTVECS)))
 XCTARGS := $(addprefix run/,$(addsuffix -xc-$(FRAMENUMBER).out,$(TESTVECS)))
 PLTTARGS := $(addprefix run/,$(addsuffix -$(FRAMENUMBER).png,$(TESTVECS)))
-BPPTARGS := $(addprefix run/,$(addsuffix .bppdiff,$(TESTVECS)))
+BPPTARGS := $(addprefix run/,$(addsuffix -$(FRAMENUMBER).bppdiff,$(TESTVECS)))
 
 .PHONY: all submodules getvecs build_tools runvp8 runxc plotxc updatexc clean
 all: plotxc
@@ -113,18 +113,18 @@ runvp8: $(VP8TARGS)
 
 runxc: $(XCTARGS)
 
-plotxc: run/runxc_out-$(FRAMENUMBER).gif run/bppdiff-$(FRAMENUMBER).txt
-	$(QPFX)echo "Average %BPP difference: $$(cat run/bppdiff.txt)"
+plotxc: run/bppdiff-$(FRAMENUMBER).txt run/runxc_out-$(FRAMENUMBER).gif
+	$(QPFX)echo "Average %BPP difference: $$(cat "$<")"
 
 run/runxc_out-$(FRAMENUMBER).gif: $(PLTTARGS)
 	$(QPFX)echo "Converting plots to animated GIF."
 	$(QPFX)convert -delay 100 -size 640x480 -loop 0 $$(for i in run/*-$(FRAMENUMBER).png; do echo "-page +0+0 $$i"; done | tr '\n' ' ') run/runxc_out-$(FRAMENUMBER).gif
 	$(QPFX)echo "Done."
 
+run/%-$(FRAMENUMBER).bppdiff: run/%-$(FRAMENUMBER).png ;
+
 run/bppdiff-$(FRAMENUMBER).txt: $(BPPTARGS)
 	$(QPFX)cd run && ../bin/calc_avg.sh $(addprefix ",$(addsuffix ",$(notdir $^))) > $(notdir $@)
-
-run/%-$(FRAMENUMBER).bppdiff: run/%-$(FRAMENUMBER).png
 
 updatexc: runxc | xc_data
 	$(QPFX)echo "Updating xc_data files."

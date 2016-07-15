@@ -3,7 +3,7 @@ set terminal pngcairo
 set logscale x
 set ylabel 'SSIM (dB0)'
 set xlabel bppdiff
-set title otitle
+set title otitle noenhanced
 set output ofile
 set style line 1 lc rgb '#dd181f' lt 1 lw 2
 set style line 2 lc rgb '#0088ff' pt 13 ps 1.5 lt 1 lw 0.5

@@ -21,6 +21,7 @@ TESTVECS := $(notdir $(wildcard test_vectors/*.y4m test_vectors/subset1-y4m/*.y4
 VP8TARGS := $(addprefix vp8_data/,$(addsuffix -vp8.out,$(TESTVECS)))
 XCTARGS := $(addprefix run/,$(addsuffix -xc.out,$(TESTVECS)))
 PLTTARGS := $(addprefix run/,$(addsuffix .png,$(TESTVECS)))
+BPPTARGS := $(addprefix run/,$(addsuffix .bppdiff,$(TESTVECS)))
 TESTDIRS := . subset1-y4m
 
 .PHONY: all submodules getvecs build_tools runvp8 runxc plotxc updatexc clean
@@ -49,9 +50,9 @@ $(foreach tdir,$(TESTDIRS),$(eval $(call XCRULE,$(tdir))))
 
 # to make the png, we need the xc out and the vp8 out
 run/%.png: run/%-xc.out vp8_data/%-vp8.out
-	$(QPFX)echo -n "Generating $@"
+	$(QPFX)echo "Generating $@"
 	$(QPFX)cd run && ../bin/ssim_vs_bpp.sh "$(notdir $<)"
-
+ 
 run:
 	$(QPFX)mkdir -p run
 
@@ -83,12 +84,18 @@ runvp8: $(VP8TARGS)
 
 runxc: $(XCTARGS)
 
-plotxc: run/runxc_out.gif
+plotxc: run/runxc_out.gif run/bppdiff.txt
+	$(QPFX)echo "Average %BPP difference: $$(cat run/bppdiff.txt)"
 
 run/runxc_out.gif: $(PLTTARGS)
 	$(QPFX)echo "Converting plots to animated GIF."
 	$(QPFX)convert -delay 100 -size 640x480 -loop 0 $$(for i in run/*.png; do echo "-page +0+0 $$i"; done | tr '\n' ' ') run/runxc_out.gif
 	$(QPFX)echo "Done."
+
+run/bppdiff.txt: $(BPPTARGS)
+	$(QPFX)cd run && ../bin/calc_avg.sh $(addprefix ",$(addsuffix ",$(notdir $^)))
+
+run/%.bppdiff: run/%.png
 
 updatexc: runxc | xc_data
 	$(QPFX)echo "Updating xc_data files."

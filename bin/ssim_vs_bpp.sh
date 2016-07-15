@@ -48,6 +48,7 @@ for FILE in "$@"; do
     "$PROCOUT" "$XCDATA" > "$TMPFILE2"
     "$PROCOUT" "$FILE" > "$TMPFILE3"
     BPPDIFF=$("$CALCDIFF" "$TMPFILE" "$TMPFILE3")
+    echo "$BPPDIFF" > "$BASENAME".bppdiff
     "$GNUPLOT" -e "ofile='${TMPFILE4}';otitle='${BASENAME2}, SSIM vs bpp';bppdiff='bits per pixel, %diff=${BPPDIFF}';rfile='${TMPFILE2}';ifile='${TMPFILE}';file='${TMPFILE3}';" ../plt/ssim_vs_bpp.plt
     mv "$TMPFILE4" "$BASENAME".png
     rm -f "$TMPFILE" "$TMPFILE2" "$TMPFILE3"

@@ -56,9 +56,3 @@ if ($count > 0) {
     $bpp_diff /= $count;
 }
 printf("%.4f\n", $bpp_diff);
-
-# prints the bpp diff to a file, which can be used to find the average bpp diff over all photos
-my $filename='../run/bppdiff.txt';
-open(my $fh_out, '>>', $filename) or die "Could not open file '$filename' $!";
-print $fh_out "$bpp_diff\n";
-close $fh_out;

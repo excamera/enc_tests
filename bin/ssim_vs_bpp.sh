@@ -53,7 +53,7 @@ for FILE in "$@"; do
     "$PROCOUT" "$FILE" > "$TMPFILE3"
     BPPDIFF=$("$CALCDIFF" "$TMPFILE" "$TMPFILE3")
     echo "$BPPDIFF" > "$BASENAME"-"$FRAMENUMBER".bppdiff
-    "$GNUPLOT" -e "ofile='${TMPFILE4}';otitle='${BASENAME2}, SSIM vs bpp';bppdiff='bits per pixel, %diff=${BPPDIFF}';rfile='${TMPFILE2}';ifile='${TMPFILE}';file='${TMPFILE3}';" ../plt/ssim_vs_bpp.plt
+    "$GNUPLOT" -e "ofile='${TMPFILE4}';otitle='${BASENAME2}, SSIM vs bpp';bppdiff='bits per pixel, diff=${BPPDIFF}%';rfile='${TMPFILE2}';ifile='${TMPFILE}';file='${TMPFILE3}';" ../plt/ssim_vs_bpp.plt
     mv "$TMPFILE4" "$BASENAME"-"$FRAMENUMBER".png
     rm -f "$TMPFILE" "$TMPFILE2" "$TMPFILE3"
 done

@@ -55,4 +55,5 @@ foreach (@xc_ssim) {
 if ($count > 0) {
     $bpp_diff /= $count;
 }
-printf("%.4f\n", $bpp_diff);
+$bpp_diff *= 100;
+printf("%.2f\n", $bpp_diff);

@@ -32,11 +32,14 @@ FRAMENUMBER := Total
 else ifeq ($(strip $(TESTTYPE)),inter2)
 TESTDIRS := xc_encoder_test_vectors_video/2frames
 FRAMENUMBER := 1
+else ifeq ($(strip $(TESTTYPE)),inter3)
+TESTDIRS := xc_encoder_test_vectors_video/3frames
+FRAMENUMBER := 2
 else ifeq ($(strip $(TESTTYPE)),inter6)
 TESTDIRS := xc_encoder_test_vectors_video/6frames
 FRAMENUMBER := 5
 else
-$(error "You must run make TESTTYPE=<type>. Valid <type>s are: still, inter2, inter6")
+$(error "You must run make TESTTYPE=<type>. Valid <type>s are: still, inter2, inter3, inter6")
 endif
 
 # Frame number should be "Total" or an 8-digit number
@@ -67,7 +70,7 @@ define VP8RULE
 vp8_data/%-vp8-$(FRAMENUMBER).out: test_vectors/$(1)/% | getvecs build_tools run2 vp8_data
 	$(QPFX)echo "Generating vp8 test data for $$<"
 	$(QPFX)cd run2 && FRAMENUMBER="$(FRAMENUMBER)" XC_ROOT="$$(XC_ROOT)" TESTS_ROOT=.. ../bin/run_tests.sh -R ../"$$<"
-	$(QPFX)mv run2/"$$(notdir $$@)" vp8_data
+	$(QPFX)cp run2/"$$(notdir $$@)" vp8_data
 endef
 # the following line actually defines the vp8_data/%-vp8.out targets based on VP8RULE and $(TESTDIRS)
 $(foreach tdir,$(TESTDIRS),$(eval $(call VP8RULE,$(tdir))))
@@ -83,7 +86,7 @@ $(foreach tdir,$(TESTDIRS),$(eval $(call XCRULE,$(tdir))))
 # to make the png, we need the xc out and the vp8 out
 run/%-$(FRAMENUMBER).png: run/%-xc-$(FRAMENUMBER).out vp8_data/%-vp8-$(FRAMENUMBER).out
 	$(QPFX)echo "Generating $@"
-	$(QPFX)cd run && FRAMENUMBER="$(FRAMENUMBER)" ../bin/ssim_vs_bpp.sh "$(notdir $<)"
+	$(QPFX)cd run && ../bin/ssim_vs_bpp.sh "$(notdir $<)"
 
 run:
 	$(QPFX)mkdir -p run

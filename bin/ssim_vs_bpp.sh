@@ -7,10 +7,6 @@
 set -e
 set -o pipefail
 
-if [ -z "$FRAMENUMBER" ]; then
-    export FRAMENUMBER="Total"
-fi
-
 if [ -z "$GNUPLOT" ]; then
     export GNUPLOT=$(which gnuplot)
 fi
@@ -35,25 +31,25 @@ if [ ! -x "$CALCDIFF" ]; then
     exit 1
 fi
 
-for FILE in "$@"; do
-    BASENAME=$(basename "$FILE" -xc-"$FRAMENUMBER".out)
-    VP8DATA=../vp8_data/"$BASENAME"-vp8-"$FRAMENUMBER".out
-    XCDATA=../xc_data/"$BASENAME"-xc-"$FRAMENUMBER".out
-    BASENAME2=$(tr -d "'" <<< ${BASENAME})
-    if [ ! -f "$VP8DATA" ]; then
-        echo "Could not find VP8 data $VP8DATA."
-        exit 1
-    fi
-    TMPFILE=$(mktemp ssim_vs_bpp.XXXXXXXX)
-    TMPFILE2=$(mktemp ssim_vs_bpp.XXXXXXXX)
-    TMPFILE3=$(mktemp ssim_vs_bpp.XXXXXXXX)
-    TMPFILE4=$(mktemp ssim_vs_bpp.XXXXXXXX.png)
-    "$PROCOUT" "$VP8DATA" > "$TMPFILE"
-    "$PROCOUT" "$XCDATA" > "$TMPFILE2"
-    "$PROCOUT" "$FILE" > "$TMPFILE3"
-    BPPDIFF=$("$CALCDIFF" "$TMPFILE" "$TMPFILE3")
-    echo "$BPPDIFF" > "$BASENAME"-"$FRAMENUMBER".bppdiff
-    "$GNUPLOT" -e "ofile='${TMPFILE4}';otitle='${BASENAME2}, SSIM vs bpp';bppdiff='bits per pixel, diff=${BPPDIFF}%';rfile='${TMPFILE2}';ifile='${TMPFILE}';file='${TMPFILE3}';" ../plt/ssim_vs_bpp.plt
-    mv "$TMPFILE4" "$BASENAME"-"$FRAMENUMBER".png
-    rm -f "$TMPFILE" "$TMPFILE2" "$TMPFILE3"
-done
+FILE="$1"
+FRAMENUMBER=$(echo "$FILE" | rev | cut -d - -f 1 | rev | cut -d . -f 1)
+BASENAME=$(basename "$FILE" -xc-"$FRAMENUMBER".out)
+VP8DATA=../vp8_data/"$BASENAME"-vp8-"$FRAMENUMBER".out
+XCDATA=../xc_data/"$BASENAME"-xc-"$FRAMENUMBER".out
+BASENAME2=$(tr -d "'" <<< ${BASENAME})
+if [ ! -f "$VP8DATA" ]; then
+    echo "Could not find VP8 data $VP8DATA."
+    exit 1
+fi
+TMPFILE=$(mktemp ssim_vs_bpp.XXXXXXXX)
+TMPFILE2=$(mktemp ssim_vs_bpp.XXXXXXXX)
+TMPFILE3=$(mktemp ssim_vs_bpp.XXXXXXXX)
+TMPFILE4=$(mktemp ssim_vs_bpp.XXXXXXXX.png)
+"$PROCOUT" "$VP8DATA" > "$TMPFILE"
+"$PROCOUT" "$XCDATA" > "$TMPFILE2"
+"$PROCOUT" "$FILE" > "$TMPFILE3"
+BPPDIFF=$("$CALCDIFF" "$TMPFILE" "$TMPFILE3")
+echo "$BPPDIFF" > "$BASENAME"-"$FRAMENUMBER".bppdiff
+"$GNUPLOT" -e "ofile='${TMPFILE4}';otitle='${BASENAME2}, Frame:${FRAMENUMBER}';bppdiff='bits per pixel, diff=${BPPDIFF}%';rfile='${TMPFILE2}';ifile='${TMPFILE}';file='${TMPFILE3}';" ../plt/ssim_vs_bpp.plt
+mv "$TMPFILE4" "$BASENAME"-"$FRAMENUMBER".png
+rm -f "$TMPFILE" "$TMPFILE2" "$TMPFILE3"

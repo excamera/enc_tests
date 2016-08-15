@@ -32,11 +32,14 @@ FRAMENUMBER := Total
 else ifeq ($(strip $(TESTTYPE)),inter2)
 TESTDIRS := xc_encoder_test_vectors_video/2frames
 FRAMENUMBER := 1
+else ifeq ($(strip $(TESTTYPE)),inter3)
+TESTDIRS := xc_encoder_test_vectors_video/3frames
+FRAMENUMBER := 2
 else ifeq ($(strip $(TESTTYPE)),inter6)
 TESTDIRS := xc_encoder_test_vectors_video/6frames
 FRAMENUMBER := 5
 else
-$(error "You must run make TESTTYPE=<type>. Valid <type>s are: still, inter2, inter6")
+$(error "You must run make TESTTYPE=<type>. Valid <type>s are: still, inter2, inter3, inter6")
 endif
 
 # Frame number should be "Total" or an 8-digit number

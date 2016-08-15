@@ -85,12 +85,14 @@ fi
 QSTR="--min-q=\$x --max-q=\$x"
 run_one_test () {
     x=$1
-    BASENAME=$2
+    BASENOFRAME=$2
+    BASENAME="$BASENOFRAME"-"$FRAMENUMBER"
 
     "$VPXDEC" --codec=vp8 -o "$BASENAME".y4m "$BASENAME".ivf
-    SIZE=$("$XCSIZE" "$BASENAME".ivf | grep "$FRAMENUMBER" | tr -s ' ' | cut -d\  -f 2)
-    "$DUMP_SSIM" "$FILE" "$BASENAME".y4m > "$BASENAME"-"$x"-ssim.out 2> /dev/null
-    FRAMES=$(cat "$BASENAME"-"$x"-ssim.out | grep ^0 | wc -l)
+    "$XCSIZE" "$BASENAME".ivf > "$BASENOFRAME"-$x-size.out
+    SIZE=$(cat "$BASENOFRAME"-$x-size.out | grep "$FRAMENUMBER" | tr -s ' ' | cut -d\  -f 2)
+    "$DUMP_SSIM" "$FILE" "$BASENAME".y4m > "$BASENOFRAME"-"$x"-ssim.out 2> /dev/null
+    FRAMES=$(cat "$BASENOFRAME"-"$x"-ssim.out | grep ^0 | wc -l)
     PIXELS=$(($WIDTH*$HEIGHT*$FRAMES))
     #
     # NOTE: since we only care about SSIM for now, we can skip running these and just put out dummy numbers
@@ -99,14 +101,23 @@ run_one_test () {
     #PSNRHVS=$($DUMP_PSNRHVS $FILE $BASENAME.y4m 2> /dev/null | grep "$FRAMENUMBER" | tr -s ' ' | cut -d\  -f $((4+$PLANE*2)))
     #FASTSSIM=$($DUMP_FASTSSIM -c $FILE $BASENAME.y4m 2> /dev/null | grep "$FRAMENUMBER" | tr -s ' ' | cut -d\  -f $((4+$PLANE*2)))
     #
-    #
-    #
     PSNR=0
     PSNRHVS=0
     FASTSSIM=0
-    SSIM=$(cat "$BASENAME"-"$x"-ssim.out | grep "$FRAMENUMBER" | tr -s ' ' | cut -d\  -f $((4+$PLANE*2)))
-    #rm -f "$BASENAME".ivf "$BASENAME".y4m "$BASENAME"-"$x"-enc.out "$BASENAME"-"$x"-ssim.out
+    SSIM=$(cat "$BASENOFRAME"-"$x"-ssim.out | grep "$FRAMENUMBER" | tr -s ' ' | cut -d\  -f $((4+$PLANE*2)))
+    #rm -f "$BASENAME".ivf "$BASENAME".y4m "$BASENAME"-"$x"-enc.out "$BASENOFAME"-"$x"-ssim.out
     echo $x $PIXELS $SIZE $PSNR $PSNRHVS $SSIM $FASTSSIM >> "$BASENAME".out
+
+    # If framenumber isn't total, generate .out files for all framenumbers below the current one
+    # NOTE: If the user doesn't specify a FRAMENUMBER, then inter6/inter2 generates .out for all frames
+    # Otherwise, higher frame number's .out files aren't generated.
+    if [ "$FRAMENUMBER" != "Total" ]; then
+        for i in $(seq -f "%08g" 0 $((10#$FRAMENUMBER-1))); do
+            SIZE=$(cat "$BASENOFRAME"-$x-size.out | grep "$i" | tr -s ' ' | cut -d\  -f 2)
+            SSIM=$(cat "$BASENOFRAME"-"$x"-ssim.out | grep "$i" | tr -s ' ' | cut -d\  -f $((4+$PLANE*2)))
+            echo $x $PIXELS $SIZE $PSNR $PSNRHVS $SSIM $FASTSSIM >> "$BASENOFRAME"-"$i".out
+        done
+    fi
 }
 
 ### Now, run the tests
@@ -116,23 +127,25 @@ for FILE in "$@"; do
 
     if [ "$REGEN" = "1" ]; then
         BASENAME=$(basename $FILE)-vp8-"$FRAMENUMBER"
+        BASENOFRAME=$(basename $FILE)-vp8
         rm -f $BASENAME.out
 
         RANGE=$(seq 1 63)
         for x in $RANGE; do
             echo $BASENAME\($x\)
             $VPXENC -y --codec=vp8 --good --cpu-used=0 --ivf $(echo $QSTR | sed 's/\$x/'$x'/g') -o $BASENAME.ivf $FILE 2> $BASENAME-$x-enc.out
-            run_one_test "$x" "$BASENAME"
+            run_one_test "$x" "$BASENOFRAME"
         done
     else
         BASENAME=$(basename $FILE)-xc-"$FRAMENUMBER"
+        BASENOFRAME=$(basename $FILE)-xc
         rm -f $BASENAME.out
 
         RANGE=$(seq 0.69 0.05 0.99)
         for x in $RANGE; do
             echo $BASENAME\($x\)
             "$XCENC" -i y4m -o "$BASENAME".ivf -s $x "$FILE" 2> $BASENAME-$x-enc.out
-            run_one_test "$x" "$BASENAME"
+            run_one_test "$x" "$BASENOFRAME"
         done
     fi
 done

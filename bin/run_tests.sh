@@ -88,7 +88,7 @@ if [ "$1" = "-R" ]; then
     shift
 fi
 
-QSTR="--min-q=\$x --max-q=\$x"
+QSTR="--min-q=\$QUALITY --max-q=\$QUALITY"
 run_one_test () {
 
     #
@@ -142,7 +142,7 @@ for FILE in "$@"; do
         BASENOFRAME=$(basename $FILE)-vp8
 
         echo $BASENAME\($QUALITY\)
-        "$VPXENC" -y --codec=vp8 --good --cpu-used=0 --ivf $(echo $QSTR | sed 's/\$QUALITY/'$QUALITY'/g') -o $BASENAME-$QUALITY.ivf $FILE 2> $BASENAME-$QUALITY-enc.out
+        $VPXENC -y --codec=vp8 --good --cpu-used=0 --ivf $(echo $QSTR | sed 's/\$QUALITY/'$QUALITY'/g') -o $BASENAME-$QUALITY.ivf $FILE 2> $BASENAME-$QUALITY-enc.out
         run_one_test "$QUALITY" "$BASENOFRAME"
     else
         BASENAME=$(basename $FILE)-xc-"$FRAMENUMBER"

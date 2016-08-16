@@ -92,14 +92,14 @@ $(foreach xcr,$(XCRANGE),$(foreach tdir,$(TESTDIRS),$(eval $(call XCRULE,$(tdir)
 # to allow parallelization
 vp8_data/%-vp8-$(FRAMENUMBER).out: $(VP8PREREQS)
 	$(QPFX)echo "Generating vp8 test data at $@"
-	$(QPFX)cat $^ | sort -n > $@
+	$(QPFX)cat "$^" | sort -n > "$@"
 	$(QPFX)rm -f $^
-	$(QPFX)cp $@ run2
+	$(QPFX)cp "$@" run2
 
 run/%-xc-$(FRAMENUMBER).out: $(XCPREREQS)
 	$(QPFX)echo "Generating xc test data at $@"
-	$(QPFX)cat $^ | sort -n > $@
-	$(QPFX)rm -f $^
+	$(QPFX)cat "$^" | sort -n > "$@"
+	$(QPFX)rm -f "$^"
 
 # to make the png, we need the xc out and the vp8 out
 run/%-$(FRAMENUMBER).png: run/%-xc-$(FRAMENUMBER).out vp8_data/%-vp8-$(FRAMENUMBER).out
@@ -139,7 +139,6 @@ runxc: $(XCTARGS)
 
 plotxc: run/bppdiff-$(FRAMENUMBER).txt run/runxc_out-$(FRAMENUMBER).gif
 	$(QPFX)echo "Average %BPP difference: $$(cat "$<")"
-	$(QPFX)rm -f $<
 
 run/runxc_out-$(FRAMENUMBER).gif: $(PLTTARGS)
 	$(QPFX)echo "Converting plots to animated GIF."
@@ -150,7 +149,6 @@ run/%-$(FRAMENUMBER).bppdiff: run/%-$(FRAMENUMBER).png ;
 
 run/bppdiff-$(FRAMENUMBER).txt: $(BPPTARGS)
 	$(QPFX)cd run && ../bin/calc_avg.sh $(addprefix ",$(addsuffix ",$(notdir $^))) > $(notdir $@)
-	$(QPFX)rm -f $^
 
 updatexc: runxc | xc_data
 	$(QPFX)echo "Updating xc_data files."

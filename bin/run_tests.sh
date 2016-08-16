@@ -134,19 +134,19 @@ run_one_test () {
 
 ### Now, run the tests
 for FILE in "$@"; do
-    WIDTH=$(head -1 $FILE | cut -d\  -f 2 | tr -d 'W')
-    HEIGHT=$(head -1 $FILE | cut -d\  -f 3 | tr -d 'H')
+    WIDTH=$(head -1 "$FILE" | cut -d\  -f 2 | tr -d 'W')
+    HEIGHT=$(head -1 "$FILE" | cut -d\  -f 3 | tr -d 'H')
 
     if [ "$REGEN" = "1" ]; then
-        BASENAME=$(basename $FILE)-vp8-"$FRAMENUMBER"
-        BASENOFRAME=$(basename $FILE)-vp8
+        BASENAME=$(basename "$FILE")-vp8-"$FRAMENUMBER"
+        BASENOFRAME=$(basename "$FILE")-vp8
 
         echo $BASENAME\($QUALITY\)
-        $VPXENC -y --codec=vp8 --good --cpu-used=0 --ivf $(echo $QSTR | sed 's/\$QUALITY/'$QUALITY'/g') -o $BASENAME-$QUALITY.ivf $FILE 2> $BASENAME-$QUALITY-enc.out
+        $VPXENC -y --codec=vp8 --good --cpu-used=0 --ivf $(echo $QSTR | sed 's/\$QUALITY/'$QUALITY'/g') -o $BASENAME-$QUALITY.ivf "$FILE" 2> $BASENAME-$QUALITY-enc.out
         run_one_test "$QUALITY" "$BASENOFRAME"
     else
-        BASENAME=$(basename $FILE)-xc-"$FRAMENUMBER"
-        BASENOFRAME=$(basename $FILE)-xc
+        BASENAME=$(basename "$FILE")-xc-"$FRAMENUMBER"
+        BASENOFRAME=$(basename "$FILE")-xc
 
         echo $BASENAME\($QUALITY\)
         "$XCENC" -i y4m -o "$BASENAME"-$QUALITY.ivf -s $QUALITY "$FILE" 2> $BASENAME-$QUALITY-enc.out

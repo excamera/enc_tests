@@ -58,6 +58,14 @@ VP8TARGS := $(addprefix vp8_data/,$(addsuffix -vp8-$(FRAMENUMBER).out,$(TESTVECS
 XCTARGS := $(addprefix run/,$(addsuffix -xc-$(FRAMENUMBER).out,$(TESTVECS)))
 PLTTARGS := $(addprefix run/,$(addsuffix -$(FRAMENUMBER).png,$(TESTVECS)))
 BPPTARGS := $(addprefix run/,$(addsuffix -$(FRAMENUMBER).bppdiff,$(TESTVECS)))
+VP8RANGE := $(shell seq 1 63)
+VP8PREREQS := $(foreach vp8r,$(VP8RANGE),$(subst ZZZ,$(vp8r),run2/%-vp8-$(FRAMENUMBER)-ZZZ.out))
+XCRANGE := $(shell seq 0.69 0.05 0.99)
+XCPREREQS := $(foreach xcr,$(XCRANGE),$(subst ZZZ,$(xcr),run/%-xc-$(FRAMENUMBER)-ZZZ.out))
+
+# keeps all intermediate files, including the run/%-xc-$(FRAMENUMBER)-$(MIN_SSIM).out that are 
+# needed to generate .out files for all frame numbers
+.SECONDARY:
 
 .PHONY: all submodules getvecs build_tools runvp8 runxc plotxc updatexc clean
 all: plotxc
@@ -67,21 +75,31 @@ all: plotxc
 # Using $(eval $(call )) this way is convenient because we can add more subdirs just by changing
 # the $(TESTDIRS) variable definition, above
 define VP8RULE
-vp8_data/%-vp8-$(FRAMENUMBER).out: test_vectors/$(1)/% | getvecs build_tools run2 vp8_data
-	$(QPFX)echo "Generating vp8 test data for $$<"
-	$(QPFX)cd run2 && FRAMENUMBER="$(FRAMENUMBER)" XC_ROOT="$$(XC_ROOT)" TESTS_ROOT=.. ../bin/run_tests.sh -R ../"$$<"
-	$(QPFX)cp run2/"$$(notdir $$@)" vp8_data
+vp8_data/%-vp8-$(FRAMENUMBER)-$(2).out: test_vectors/$(1)/% | getvecs build_tools run2 vp8_data
+	$(QPFX)cd run2 && FRAMENUMBER="$(FRAMENUMBER)" MIN_SSIM="$(2)" XC_ROOT="$$(XC_ROOT)" TESTS_ROOT=.. ../bin/run_tests.sh -R ../"$$<"
 endef
 # the following line actually defines the vp8_data/%-vp8.out targets based on VP8RULE and $(TESTDIRS)
 $(foreach tdir,$(TESTDIRS),$(eval $(call VP8RULE,$(tdir))))
 
 # as above, we make separate rules for each subdir in test_vectors where a vector might live
 define XCRULE
-run/%-xc-$(FRAMENUMBER).out: test_vectors/$(1)/% $$(XC_ROOT)/src/frontend/xc-enc | getvecs build_tools run
-	$(QPFX)echo "Generating xc test data for $$<"
-	$(QPFX)cd run && FRAMENUMBER="$(FRAMENUMBER)" XC_ROOT="$$(XC_ROOT)" TESTS_ROOT=.. ../bin/run_tests.sh ../"$$<"
+run/%-xc-$(FRAMENUMBER)-$(2).out: test_vectors/$(1)/% $$(XC_ROOT)/src/frontend/xc-enc | getvecs build_tools run
+	$(QPFX)cd run && FRAMENUMBER="$(FRAMENUMBER)" MIN_SSIM="$(2)" XC_ROOT="$$(XC_ROOT)" TESTS_ROOT=.. ../bin/run_tests.sh ../"$$<"
 endef
-$(foreach tdir,$(TESTDIRS),$(eval $(call XCRULE,$(tdir))))
+$(foreach xcr,$(XCRANGE),$(foreach tdir,$(TESTDIRS),$(eval $(call XCRULE,$(tdir),$(xcr)))))
+
+# The individual .out files for each SSIM level (1-63) are generated separately and concatenated
+# to allow parallelization
+vp8_data/%-vp8-$(FRAMENUMBER).out: $(VP8PREREQS)
+	$(QPFX)echo "Generating vp8 test data at $@"
+	$(QPFX)cat $^ | sort -n > $@
+	$(QPFX)rm -f $^
+	$(QPFX)cp $@ run2
+
+run/%-xc-$(FRAMENUMBER).out: $(XCPREREQS)
+	$(QPFX)echo "Generating xc test data at $@"
+	$(QPFX)cat $^ | sort -n > $@
+	$(QPFX)rm -f $^
 
 # to make the png, we need the xc out and the vp8 out
 run/%-$(FRAMENUMBER).png: run/%-xc-$(FRAMENUMBER).out vp8_data/%-vp8-$(FRAMENUMBER).out
@@ -121,6 +139,7 @@ runxc: $(XCTARGS)
 
 plotxc: run/bppdiff-$(FRAMENUMBER).txt run/runxc_out-$(FRAMENUMBER).gif
 	$(QPFX)echo "Average %BPP difference: $$(cat "$<")"
+	$(QPFX)rm -f $<
 
 run/runxc_out-$(FRAMENUMBER).gif: $(PLTTARGS)
 	$(QPFX)echo "Converting plots to animated GIF."
@@ -131,6 +150,7 @@ run/%-$(FRAMENUMBER).bppdiff: run/%-$(FRAMENUMBER).png ;
 
 run/bppdiff-$(FRAMENUMBER).txt: $(BPPTARGS)
 	$(QPFX)cd run && ../bin/calc_avg.sh $(addprefix ",$(addsuffix ",$(notdir $^))) > $(notdir $@)
+	$(QPFX)rm -f $^
 
 updatexc: runxc | xc_data
 	$(QPFX)echo "Updating xc_data files."

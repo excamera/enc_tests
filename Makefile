@@ -94,13 +94,11 @@ $(foreach xcr,$(XCRANGE),$(foreach tdir,$(TESTDIRS),$(eval $(call XCRULE,$(tdir)
 vp8_data/%-vp8-$(FRAMENUMBER).out: $(VP8PREREQS)
 	$(QPFX)echo "Generating vp8 test data at $@"
 	$(QPFX)cat $(addprefix ",$(addsuffix ",$^)) | sort -n > "$@" #")") fixes highlighting issues...
-	$(QPFX)rm -f $^
 	$(QPFX)cp "$@" run2
 
 run/%-xc-$(FRAMENUMBER).out: $(XCPREREQS)
 	$(QPFX)echo "Generating xc test data at $@"
 	$(QPFX)cat $(addprefix ",$(addsuffix ",$^)) | sort -n > "$@" #")")
-	$(QPFX)rm -f "$^"
 
 # to make the png, we need the xc out and the vp8 out
 run/%-$(FRAMENUMBER).png: run/%-xc-$(FRAMENUMBER).out vp8_data/%-vp8-$(FRAMENUMBER).out

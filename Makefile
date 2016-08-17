@@ -138,7 +138,7 @@ runvp8: $(VP8TARGS)
 
 runxc: $(XCTARGS)
 
-plotxc: run/runxc_out-$(FRAMENUMBER).gif run/bppdiff-$(FRAMENUMBER).txt
+plotxc: run/bppdiff-$(FRAMENUMBER).txt run/runxc_out-$(FRAMENUMBER).gif 
 	$(QPFX)echo "Average %BPP difference: $$(cat "$<")"
 
 run/runxc_out-$(FRAMENUMBER).gif: $(PLTTARGS)

@@ -68,7 +68,8 @@ XCPREREQS := $(foreach xcr,$(XCRANGE),$(subst ZZZ,$(xcr),run/%-xc-$(FRAMENUMBER)
 .SECONDARY:
 
 .PHONY: all submodules getvecs build_tools runvp8 runxc plotxc updatexc clean
-all: plotxc
+all: getvecs build_tools run run2
+	$(QPFX)echo "Setup complete, please run 'make plotxc' to generate graphs"
 
 # each test vector can be in test_vectors/ or in test_vectors/subset1-y4m or maybe other directories,
 # so we define separate rules that match depending on where the input file lives.
@@ -92,13 +93,13 @@ $(foreach xcr,$(XCRANGE),$(foreach tdir,$(TESTDIRS),$(eval $(call XCRULE,$(tdir)
 # to allow parallelization
 vp8_data/%-vp8-$(FRAMENUMBER).out: $(VP8PREREQS)
 	$(QPFX)echo "Generating vp8 test data at $@"
-	$(QPFX)cat "$^" | sort -n > "$@"
+	$(QPFX)cat $(addprefix ",$(addsuffix ",$^)) | sort -n > "$@" #")") fixes highlighting issues...
 	$(QPFX)rm -f $^
 	$(QPFX)cp "$@" run2
 
 run/%-xc-$(FRAMENUMBER).out: $(XCPREREQS)
 	$(QPFX)echo "Generating xc test data at $@"
-	$(QPFX)cat "$^" | sort -n > "$@"
+	$(QPFX)cat $(addprefix ",$(addsuffix ",$^)) | sort -n > "$@" #")")
 	$(QPFX)rm -f "$^"
 
 # to make the png, we need the xc out and the vp8 out
@@ -137,7 +138,7 @@ runvp8: $(VP8TARGS)
 
 runxc: $(XCTARGS)
 
-plotxc: run/bppdiff-$(FRAMENUMBER).txt run/runxc_out-$(FRAMENUMBER).gif
+plotxc: run/runxc_out-$(FRAMENUMBER).gif run/bppdiff-$(FRAMENUMBER).txt
 	$(QPFX)echo "Average %BPP difference: $$(cat "$<")"
 
 run/runxc_out-$(FRAMENUMBER).gif: $(PLTTARGS)
@@ -148,7 +149,7 @@ run/runxc_out-$(FRAMENUMBER).gif: $(PLTTARGS)
 run/%-$(FRAMENUMBER).bppdiff: run/%-$(FRAMENUMBER).png ;
 
 run/bppdiff-$(FRAMENUMBER).txt: $(BPPTARGS)
-	$(QPFX)cd run && ../bin/calc_avg.sh $(addprefix ",$(addsuffix ",$(notdir $^))) > $(notdir $@)
+	$(QPFX)cd run && ../bin/calc_avg.sh $(addprefix ",$(addsuffix ",$(notdir $^))) > $(notdir $@) #")")
 
 updatexc: runxc | xc_data
 	$(QPFX)echo "Updating xc_data files."

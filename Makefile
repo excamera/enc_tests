@@ -68,8 +68,13 @@ XCPREREQS := $(foreach xcr,$(XCRANGE),$(subst ZZZ,$(xcr),run/%-xc-$(FRAMENUMBER)
 .SECONDARY:
 
 .PHONY: all submodules getvecs build_tools runvp8 runxc plotxc updatexc clean
+ifeq (,$(wildcard test_vectors/xc_encoder_test_vectors_video/.git))
 all: getvecs build_tools run run2
-	$(QPFX)echo "Setup complete, please run 'make plotxc' to generate graphs"
+	$(QPFX)echo "Setup complete. Please re-run 'make TESTTYPE=$(TESTTYPE)' (you shouldn't see this message again)."
+	$(QPFX)if [ ! -x "$(XC_ROOT)/src/frontend/xc-enc" ]; then echo "INFO: you need to build xc-enc before running!"; fi
+else
+all: getvecs build_tools run run2 plotxc
+endif
 
 # each test vector can be in test_vectors/ or in test_vectors/subset1-y4m or maybe other directories,
 # so we define separate rules that match depending on where the input file lives.

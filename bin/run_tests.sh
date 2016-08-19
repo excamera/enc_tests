@@ -111,7 +111,10 @@ run_one_test () {
     "$DUMP_SSIM" "$FILE" "$BASENAME"-$x.y4m > "$BASENOFRAME"-"$x"-ssim.out 2> /dev/null
 
     FRAMES=$(cat "$BASENOFRAME"-"$x"-ssim.out | grep ^0 | wc -l)
-    PIXELS=$(($WIDTH*$HEIGHT*$FRAMES))
+    PIXELS=$(($WIDTH*$HEIGHT))
+    if [ "$FRAMENUMBER" == "Total" ]; then
+        PIXELS=$(($WIDTH*$HEIGHT*$FRAMES))
+    fi
     SIZE=$(cat "$BASENOFRAME"-$x-size.out | grep "$FRAMENUMBER" | tr -s ' ' | cut -d\  -f 2)
     PSNR=0
     PSNRHVS=0

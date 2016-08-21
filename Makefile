@@ -96,14 +96,16 @@ $(foreach xcr,$(XCRANGE),$(foreach tdir,$(TESTDIRS),$(eval $(call XCRULE,$(tdir)
 
 # The individual .out files for each SSIM level (1-63) are generated separately and concatenated
 # to allow parallelization
-vp8_data/%-vp8-$(FRAMENUMBER).out: $(VP8PREREQS)
+run2/%-vp8-$(FRAMENUMBER).out: | $(VP8PREREQS)
 	$(QPFX)echo "Generating vp8 test data at $@"
-	$(QPFX)cat $(addprefix ",$(addsuffix ",$^)) | sort -n > "$@" #")") fixes highlighting issues...
-	$(QPFX)cp "$@" run2
+	$(QPFX)cat $(addprefix ",$(addsuffix ",$|)) | sort -n > "$@"
 
-run/%-xc-$(FRAMENUMBER).out: $(XCPREREQS)
+vp8_data/%-vp8-$(FRAMENUMBER).out: | run2/%-vp8-$(FRAMENUMBER).out
+	$(QPFX)cp "$|" "$@"
+
+run/%-xc-$(FRAMENUMBER).out: | $(XCPREREQS)
 	$(QPFX)echo "Generating xc test data at $@"
-	$(QPFX)cat $(addprefix ",$(addsuffix ",$^)) | sort -n > "$@" #")")
+	$(QPFX)cat $(addprefix ",$(addsuffix ",$|)) | sort -n > "$@" #")")
 
 # to make the png, we need the xc out and the vp8 out
 run/%-$(FRAMENUMBER).png: run/%-xc-$(FRAMENUMBER).out vp8_data/%-vp8-$(FRAMENUMBER).out

@@ -152,7 +152,7 @@ for FILE in "$@"; do
         BASENOFRAME=$(basename "$FILE")-xc
 
         echo $BASENAME\($QUALITY\)
-        "$XCENC" -i y4m -o "$BASENAME"-$QUALITY.ivf -s $QUALITY "$FILE" 2> $BASENAME-$QUALITY-enc.out
+        "$XCENC" --two-pass -i y4m -o "$BASENAME"-$QUALITY.ivf -s $QUALITY "$FILE" 2> $BASENAME-$QUALITY-enc.out
         run_one_test "$QUALITY" "$BASENOFRAME"
     fi
 done

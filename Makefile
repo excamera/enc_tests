@@ -60,7 +60,7 @@ PLTTARGS := $(addprefix run/,$(addsuffix -$(FRAMENUMBER).png,$(TESTVECS)))
 BPPTARGS := $(addprefix run/,$(addsuffix -$(FRAMENUMBER).bppdiff,$(TESTVECS)))
 VP8RANGE := $(shell seq 1 63)
 VP8PREREQS := $(foreach vp8r,$(VP8RANGE),$(subst ZZZ,$(vp8r),run2/%-vp8-$(FRAMENUMBER)-ZZZ.out))
-XCRANGE := $(shell seq 0.69 0.05 0.99)
+XCRANGE := $(shell seq 0 10 127)
 XCPREREQS := $(foreach xcr,$(XCRANGE),$(subst ZZZ,$(xcr),run/%-xc-$(FRAMENUMBER)-ZZZ.out))
 
 # keeps all intermediate files, including the run/%-xc-$(FRAMENUMBER)-$(QUALITY).out that are 
